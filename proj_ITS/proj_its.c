@@ -28,6 +28,9 @@
  *  Módulos utilizados:
  *     ADC - B2 e B4
  *     Timer 0
+ *  Pendências possíveis para se fazer:
+ *     Obtenção dos parâmetros de tensão de offset e corrent de offset através dos testes do lab2c
+ *     Acionar o cálculo do Rs online ou da ténica de field weakining
  */
 
 // the includes
@@ -136,21 +139,23 @@ _iq gTorque_Flux_Iq_pu_to_Nm_sf;
 ***************************************************************************/
 #define MIN_VALUE_HALL   _IQ(0.1)        //(Padrão 10%)  Valor mínimo percentual para sensibilização de pressionamento dos sensores de efeito hall
 #define MAX_VALUE_HALL   _IQ(1.0)        //(Padrão 1 - IQ_24) Valor máximo do fundo de escala do sensor hall
-#define SIZE_STEPS_kRPM  _IQ(1)          //(Padrão 200RPM) Valor em kilo RPM de resolução de velocidade
+#define SIZE_STEPS_kRPM  _IQ(1.0)        //(Padrão 1kRPM) Valor em kilo RPM de resolução de velocidade
 #define SENSOR_CW        hallSensor1     //(Padrão H1) Define o sensor para o sentido de rotação horário
 #define SENSOR_CCW       hallSensor2     //(Padrão H2) Define o sensor para o sentido de rotação anti-horário
-#define MAX_kRPM_VALUE   _IQ(28)       //(Padrão 15.600RPM) Valor em kilo RPM de velocidade máxima da Pistola
-#define ACCEL_IND_VALUE  _IQ(126)        //(Padrão 126 kRPM/s) Valor em kilo RPM por segundo da aceleração em acionamento individual dos sensores
+#define MAX_kRPM_VALUE   _IQ(28.2)       //(Padrão 28.200RPM) Valor em kilo RPM de velocidade máxima da Pistola
+#define ACCEL_IND_VALUE  _IQ(126.0)      //(Padrão 126 kRPM/s) Valor em kilo RPM por segundo da aceleração em acionamento individual dos sensores
 #define CYCLES_ADC_READ  1               //(Padrão 1) Número de ciclos antes de reler o conversor ADC
 #define ENABLE_ADC_HALL                  //(Padrão não comentado) Habilita ou desabilita os sensores hall para teste
+//#define ENABLE_MANUAL_SPEED            //(Padrão comentado) Habilita ou desabilita o controle manual do setpoint de velocidade
+//#define ENABLE_LAUNCHPAD_POT_TEST        //(Padrão comentado) Habilita ou desabilita o controle de velocidade pelos adaptador no launchpad
 #define N_ADC_FILTER     _IQ(2.0)        //Coeficiente do filtro por sw de pólo singular
 #define MAX_ACCEL_VALUE  _IQ(126)        //(Padrão 126 kRPM/s)Maior valor real de aceleração possível de se aplicar ao motor, valor em kilo RPM por segundo da aceleração em acionamento duplo dos sensores
 #define SIZE_STEPS_ACCEL _IQ(30)         //(Padrão 30kRPM/s) Valor em kilo RPM por segundo de resolução de aceleração do pressionamento duplo dos gatilhos
 #define OFFSET_HALL_1    _IQ(0.55)
 #define OFFSET_HALL_2    _IQ(0.55)
-
+#define LIMIT_TORQUE _IQ(9.15)
 //#define AXIS_FREE_ZERO_S               //(Padrão comentada - PERIGO - Descomentar PEGA FOGO) Macro que define o estado do eixo em velocidade zero, Comentada-eixo travado, Não comentada-eixo solto AVISO: Atualmente ao acionar esta opção a fonte pode entrar em modo proteção pelo solavanco do motor ao ligar o PWM
-//#define MASK_ADC_ENABLE                //(Padrão comentada) Elimina a precisão do sensor AD através de mascaramento
+#define MASK_ADC_ENABLE                //(Padrão comentada) Elimina a precisão do sensor AD através de mascaramento
 
 _iq errorSpeed     = _IQ(0.0),
     ActualSpeedRef = _IQ(0.0),
@@ -208,7 +213,6 @@ static inline void initCalcs(HAL_Handle handle){
   resSpeed                   = _IQdiv(MAX_kRPM_VALUE,SIZE_STEPS_kRPM);
   stepHallADC                = _IQdiv(cursoHall,resSpeed);
   gMotorVars.MaxAccel_krpmps = ACCEL_IND_VALUE;
-
   resAccel                   = _IQdiv(MAX_ACCEL_VALUE,SIZE_STEPS_ACCEL);
   stepAccel                  = _IQdiv(cursoHall,resAccel);
 
@@ -222,45 +226,32 @@ static inline void HAL_readHallData(HAL_Handle handle)
   valor_hall_1 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_8));
   valor_hall_2 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_9));
 
-  #ifdef ENABLE_ADC_HALL
-    STriggers.hallSensor1 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_8))-OFFSET_HALL_1;
-    STriggers.hallSensor2 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_9))-OFFSET_HALL_2;
-//      STriggers.hallSensor1 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_8));
-//      STriggers.hallSensor2 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_9));
+  #ifndef ENABLE_MANUAL_SPEED
+      #ifdef ENABLE_ADC_HALL
+        STriggers.hallSensor1 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_8))-OFFSET_HALL_1;
+        STriggers.hallSensor2 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_9))-OFFSET_HALL_2;
 
-    STriggers.hallSensor1 = _IQmpy(STriggers.hallSensor1,_IQ(16.67));
-    STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(16.67));
+        STriggers.hallSensor1 = _IQmpy(STriggers.hallSensor1,_IQ(16.67));
+        STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(16.67));
 
-    //   if (STriggers.hallSensor1 >= MAX_VALUE_HALL)
-    //   {
-    //     STriggers.hallSensor1 = MAX_VALUE_HALL;
-    //   }
-    //
-    //   if (STriggers.hallSensor2 >= MAX_VALUE_HALL)
-    //   {
-    //     STriggers.hallSensor2 = MAX_VALUE_HALL;
-    //   }
+        #ifdef MASK_ADC_ENABLE //0.XXX000000000000
+          //Máscara para o conversor ADC para eliminar ruídos
+          STriggers.hallSensor1 = _IQmpy(STriggers.hallSensor1,_IQ(100));
+          STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(100));
 
-    //Filtro exponencial de pólo único
-//    STriggers.hallSensor1 = STriggers.hallSensor1Old + _IQdiv((STriggers.hallSensor1-STriggers.hallSensor1Old),N_ADC_FILTER);
-//    STriggers.hallSensor2 = STriggers.hallSensor2Old + _IQdiv((STriggers.hallSensor2-STriggers.hallSensor2Old),N_ADC_FILTER);
-//
-//    STriggers.hallSensor1Old = STriggers.hallSensor1;
-//    STriggers.hallSensor2Old = STriggers.hallSensor2;
+          STriggers.hallSensor1 = STriggers.hallSensor1-_IQfrac(STriggers.hallSensor1);
+          STriggers.hallSensor2 = STriggers.hallSensor2-_IQfrac(STriggers.hallSensor2);
 
-    #ifdef MASK_ADC_ENABLE //0.XXX000000000000
-      //Máscara para o conversor ADC para eliminar ruídos
-      STriggers.hallSensor1 = _IQmpy(STriggers.hallSensor1,_IQ(100));
-      STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(100));
+          STriggers.hallSensor1 = _IQmpy(STriggers.hallSensor1,_IQ(0.01));
+          STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(0.01));
+        #endif
+      #endif
 
-      STriggers.hallSensor1 = STriggers.hallSensor1-_IQfrac(STriggers.hallSensor1);
-      STriggers.hallSensor2 = STriggers.hallSensor2-_IQfrac(STriggers.hallSensor2);
-
-      STriggers.hallSensor1 = _IQmpy(STriggers.hallSensor1,_IQ(0.01));
-      STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(0.01));
-    #endif
+      #ifdef ENABLE_LAUNCHPAD_POT_TEST
+          STriggers.hallSensor1 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_8));
+          STriggers.hallSensor2 = _IQ12toIQ((_iq)ADC_readResult(obj->adcHandle,ADC_ResultNumber_9));
+      #endif
   #endif
-
 
 }
 
@@ -286,6 +277,8 @@ static inline void setState()
       }
       else
       {
+        gMotorVars.IdRef_A = _IQ(0);
+        gMotorVars.IqRef_A = _IQ(0);
         gMotorVars.SpeedRef_krpm = _IQ(0.0);
         mainState = iddle;
         #ifdef AXIS_FREE_ZERO_S
@@ -307,15 +300,18 @@ static inline void setState()
       incSpeed                   = _IQdiv(STriggers.SENSOR_CW,stepHallADC);
       resSpeed                   = incSpeed-_IQfrac(incSpeed);
       incSpeed                   = _IQmpy(resSpeed,SIZE_STEPS_kRPM);
-      if(incSpeed >= MAX_kRPM_VALUE){
-          incSpeed = MAX_kRPM_VALUE;
-      }
 
-      if (incSpeed != gMotorVars.SpeedRef_krpm)
-      {
+      gMotorVars.IdRef_A = LIMIT_TORQUE;
+      gMotorVars.IqRef_A = LIMIT_TORQUE;
+
+      if(incSpeed >= MAX_kRPM_VALUE)
+          incSpeed = MAX_kRPM_VALUE;
+
+      if (incSpeed != gMotorVars.SpeedRef_krpm){
         gMotorVars.SpeedRef_krpm = incSpeed;
         speedRefOld = incSpeed;
       }
+
       mainState = iddle;
     break;
     case TriggerCCW:
@@ -333,12 +329,13 @@ static inline void setState()
       resSpeed                   = incSpeed-_IQfrac(incSpeed);
       incSpeed                   = -(_IQmpy(resSpeed,SIZE_STEPS_kRPM));
 
-      if(incSpeed >= MAX_kRPM_VALUE){
-          incSpeed = MAX_kRPM_VALUE;
-      }
+      gMotorVars.IdRef_A = LIMIT_TORQUE;
+      gMotorVars.IqRef_A = LIMIT_TORQUE;
 
-      if (incSpeed != gMotorVars.SpeedRef_krpm)
-      {
+      if(incSpeed >= MAX_kRPM_VALUE)
+          incSpeed = MAX_kRPM_VALUE;
+
+      if (incSpeed != gMotorVars.SpeedRef_krpm){
         gMotorVars.SpeedRef_krpm = incSpeed;
         speedRefOld = incSpeed;
       }
@@ -600,6 +597,8 @@ void main(void)
   {
     // Waiting for enable system flag to be set
     //while(!(gMotorVars.Flag_enableSys));
+    gMotorVars.IdRef_A = LIMIT_TORQUE;
+    gMotorVars.IqRef_A = LIMIT_TORQUE;
 	gMotorVars.Flag_enableUserParams = true;
     gMotorVars.Flag_enableSys = true; //Consideramos que o sistema é inicializado automaticamente
     gMotorVars.Flag_Run_Identify = true; //Motor já identificado
