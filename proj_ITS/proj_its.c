@@ -5,32 +5,32 @@
  *  /_/ \_\_/\_/ \___|___|___/
  *
  *  Projeto: Pistola Cirurgica  ITS-MC
- *  Desenvolvedor: ¬nderson Ign·cio da Silva
+ *  Desenvolvedor: √Çnderson Ign√°cio da Silva
  *  Data: 27/07/16
  *  Plataforma: C2000 Launchpad (LAUNCHXL-F28027) - Piccolo TMS320F28027 MCU
- *  DescriÁ„o: Arquivo principal contendo todas as rotinas para funcionamento do equipamento
- *             O arquivo principal dos par‚metros do motor se chama user.h
- *             PorÈm deve-se atentar ao fato desse arquivo ter que ser copiado
+ *  Descri√ß√£o: Arquivo principal contendo todas as rotinas para funcionamento do equipamento
+ *             O arquivo principal dos par√¢metros do motor se chama user.h
+ *             Por√©m deve-se atentar ao fato desse arquivo ter que ser copiado
  *             manualmente para o local de onde o projeto chama-o.
  *
- *  Lista de entradas e saÌdas:
+ *  Lista de entradas e sa√≠das:
  *   Gatilhos dos sensores hall:
  *     H1 = Pino ADCINB2 - 09 do J1
  *     H2 = Pino ADCINB4 - 10 do J1
- *   Drivers de saÌda para o motor:
+ *   Drivers de sa√≠da para o motor:
  *     BOOSTXL-DRV8301
- *   ConfiguraÁ„o de Jumpers para DEBUG:
+ *   Configura√ß√£o de Jumpers para DEBUG:
  *     S4 - ON
  *     S1 - ON-ON-ON/UP-UP-UP
- *   ConfiguraÁ„o de Jumpers para BOOT DA FLASH:
+ *   Configura√ß√£o de Jumpers para BOOT DA FLASH:
  *     S4 - ON
  *     S1 - ON-ON-OFF/UP-UP-DOWN
- *  MÛdulos utilizados:
+ *  M√≥dulos utilizados:
  *     ADC - B2 e B4
  *     Timer 0
- *  PendÍncias possÌveis para se fazer:
- *     ObtenÁ„o dos par‚metros de tens„o de offset e corrent de offset atravÈs dos testes do lab2c
- *     Acionar o c·lculo do Rs online ou da tÈnica de field weakining
+ *  Pend√™ncias poss√≠veis para se fazer:
+ *     Obten√ß√£o dos par√¢metros de tens√£o de offset e corrent de offset atrav√©s dos testes do lab2c
+ *     Acionar o c√°lculo do Rs online ou da t√©nica de field weakining
  */
 
 // the includes
@@ -54,8 +54,8 @@
 
 // **************************************************************************
 // the globals
-_iq angle_pu;                 //Vari·vel que estima o ‚ngulo do rotor (n„o utilizada atÈ o momento)
-MATH_vec2 phasor;             //Auxiliar para obtenÁ„o do ‚ngulo do rotor
+_iq angle_pu;                 //Vari√°vel que estima o √¢ngulo do rotor (n√£o utilizada at√© o momento)
+MATH_vec2 phasor;             //Auxiliar para obten√ß√£o do √¢ngulo do rotor
 
 uint_least16_t gCounter_updateGlobals = 0;
 
@@ -135,27 +135,28 @@ _iq gTorque_Flux_Iq_pu_to_Nm_sf;
 
 
 /***************************************************************************
- *  Dados definidos por: ¬nderson I. da Silva
+ *  Dados definidos por: √Çnderson I. da Silva
 ***************************************************************************/
-#define MIN_VALUE_HALL   _IQ(0.1)        //(Padr„o 10%)  Valor mÌnimo percentual para sensibilizaÁ„o de pressionamento dos sensores de efeito hall
-#define MAX_VALUE_HALL   _IQ(1.0)        //(Padr„o 1 - IQ_24) Valor m·ximo do fundo de escala do sensor hall
-#define SIZE_STEPS_kRPM  _IQ(1.0)        //(Padr„o 1kRPM) Valor em kilo RPM de resoluÁ„o de velocidade
-#define SENSOR_CW        hallSensor1     //(Padr„o H1) Define o sensor para o sentido de rotaÁ„o hor·rio
-#define SENSOR_CCW       hallSensor2     //(Padr„o H2) Define o sensor para o sentido de rotaÁ„o anti-hor·rio
-#define MAX_kRPM_VALUE   _IQ(28.2)       //(Padr„o 28.200RPM) Valor em kilo RPM de velocidade m·xima da Pistola
-#define ACCEL_IND_VALUE  _IQ(126.0)      //(Padr„o 126 kRPM/s) Valor em kilo RPM por segundo da aceleraÁ„o em acionamento individual dos sensores
-#define CYCLES_ADC_READ  1               //(Padr„o 1) N˙mero de ciclos antes de reler o conversor ADC
-#define ENABLE_ADC_HALL                  //(Padr„o n„o comentado) Habilita ou desabilita os sensores hall para teste
-//#define ENABLE_MANUAL_SPEED            //(Padr„o comentado) Habilita ou desabilita o controle manual do setpoint de velocidade
-//#define ENABLE_LAUNCHPAD_POT_TEST        //(Padr„o comentado) Habilita ou desabilita o controle de velocidade pelos adaptador no launchpad
-#define N_ADC_FILTER     _IQ(2.0)        //Coeficiente do filtro por sw de pÛlo singular
-#define MAX_ACCEL_VALUE  _IQ(126)        //(Padr„o 126 kRPM/s)Maior valor real de aceleraÁ„o possÌvel de se aplicar ao motor, valor em kilo RPM por segundo da aceleraÁ„o em acionamento duplo dos sensores
-#define SIZE_STEPS_ACCEL _IQ(30)         //(Padr„o 30kRPM/s) Valor em kilo RPM por segundo de resoluÁ„o de aceleraÁ„o do pressionamento duplo dos gatilhos
-#define OFFSET_HALL_1    _IQ(0.55)
-#define OFFSET_HALL_2    _IQ(0.55)
-#define LIMIT_TORQUE _IQ(9.15)
-//#define AXIS_FREE_ZERO_S               //(Padr„o comentada - PERIGO - Descomentar PEGA FOGO) Macro que define o estado do eixo em velocidade zero, Comentada-eixo travado, N„o comentada-eixo solto AVISO: Atualmente ao acionar esta opÁ„o a fonte pode entrar em modo proteÁ„o pelo solavanco do motor ao ligar o PWM
-#define MASK_ADC_ENABLE                //(Padr„o comentada) Elimina a precis„o do sensor AD atravÈs de mascaramento
+#define MIN_VALUE_HALL   _IQ(0.1)        //(Padr√£o 10%)  Valor m√≠nimo percentual para sensibiliza√ß√£o de pressionamento dos sensores de efeito hall
+#define MAX_VALUE_HALL   _IQ(1.0)        //(Padr√£o 1 - IQ_24) Valor m√°ximo do fundo de escala do sensor hall
+#define SIZE_STEPS_kRPM  _IQ(1.0)        //(Padr√£o 1kRPM) Valor em kilo RPM de resolu√ß√£o de velocidade
+#define SENSOR_CW        hallSensor1     //(Padr√£o H1) Define o sensor para o sentido de rota√ß√£o hor√°rio
+#define SENSOR_CCW       hallSensor2     //(Padr√£o H2) Define o sensor para o sentido de rota√ß√£o anti-hor√°rio
+#define MAX_kRPM_VALUE   _IQ(28.2)       //(Padr√£o 28.200RPM) Valor em kilo RPM de velocidade m√°xima da Pistola
+#define ACCEL_IND_VALUE  _IQ(126.0)      //(Padr√£o 126 kRPM/s) Valor em kilo RPM por segundo da acelera√ß√£o em acionamento individual dos sensores
+#define CYCLES_ADC_READ  1               //(Padr√£o 1) N√∫mero de ciclos antes de reler o conversor ADC
+#define ENABLE_ADC_HALL                  //(Padr√£o n√£o comentado) Habilita ou desabilita os sensores hall da placa final
+//#define ENABLE_MANUAL_SPEED              //(Padr√£o comentado) Habilita ou desabilita o controle manual do setpoint de velocidade
+//#define ENABLE_LAUNCHPAD_POT_TEST      //(Padr√£o comentado) Habilita ou desabilita o controle de velocidade pelos adaptador no launchpad
+#define N_ADC_FILTER     _IQ(2.0)        //Coeficiente do filtro por sw de p√≥lo singular
+#define MAX_ACCEL_VALUE  _IQ(126)        //(Padr√£o 126 kRPM/s)Maior valor real de acelera√ß√£o poss√≠vel de se aplicar ao motor, valor em kilo RPM por segundo da acelera√ß√£o em acionamento duplo dos sensores
+#define SIZE_STEPS_ACCEL _IQ(30)         //(Padr√£o 30kRPM/s) Valor em kilo RPM por segundo de resolu√ß√£o de acelera√ß√£o do pressionamento duplo dos gatilhos
+#define OFFSET_HALL_1    _IQ(0.55)       //(Padr√£o 0.55) Valor de offset para o valor ADC dos gatilhos do sensor Hall
+#define OFFSET_HALL_2    _IQ(0.55)       //(Padr√£o 0.55) Valor de offset para o valor ADC dos gatilhos do sensor Hall
+#define LIMIT_TORQUE     _IQ(9.15)       //(Padr√£o 9.15) Valor de corrente para o setpoint de torque do motor maxon
+//#define DISABLE_TORQUE                 // (Padr√£o comentada) Desabilita controle de torque se n√£o estiver comentada
+//#define AXIS_FREE_ZERO_S               //(Padr√£o comentada - PERIGO - Descomentar PEGA FOGO) Macro que define o estado do eixo em velocidade zero, Comentada-eixo travado, N√£o comentada-eixo solto AVISO: Atualmente ao acionar esta op√ß√£o a fonte pode entrar em modo prote√ß√£o pelo solavanco do motor ao ligar o PWM
+#define MASK_ADC_ENABLE                  //(Padr√£o comentada) Elimina a precis√£o do sensor AD atrav√©s de mascaramento
 
 _iq errorSpeed     = _IQ(0.0),
     ActualSpeedRef = _IQ(0.0),
@@ -173,7 +174,7 @@ uint16_t delayReadADC        = 0;
 uint32_t globalMachineCycles = 0;
 uint32_t  setTimerToggle     = 0;
 
-//Estrutura de vari·veis para leitura dos valores dos sensores hall
+//Estrutura de vari√°veis para leitura dos valores dos sensores hall
 typedef struct hallADCSensors{
   _iq hallSensor1;
   _iq hallSensor2;
@@ -182,7 +183,7 @@ typedef struct hallADCSensors{
   _iq meanDoubleTrig;
 }hallADCSensors;
 
-//M·quina de estados utilizada para controle de giro
+//M√°quina de estados utilizada para controle de giro
 typedef enum systemState{
   iddle,
   TriggerCW,
@@ -199,14 +200,14 @@ hallADCSensors STriggers = { _IQ(0.00),
                              _IQ(0.00) };
 
 /***************************************************************************
- *  Fim de dados definidos por: ¬nderson I. da Silva
+ *  Fim de dados definidos por: √Çnderson I. da Silva
 ***************************************************************************/
 
 /***************************************************************************
- *  FunÁıes definidas por: ¬nderson I. da Silva
+ *  Fun√ß√µes definidas por: √Çnderson I. da Silva
 ***************************************************************************/
-//As funÁıes s„o declaradas como "static inline" para que o compilador
-//otimize o processo de sÌntese, alocando o cÛdigo dentro da funÁ„o principal
+//As fun√ß√µes s√£o declaradas como "static inline" para que o compilador
+//otimize o processo de s√≠ntese, alocando o c√≥digo dentro da fun√ß√£o principal
 
 static inline void initCalcs(HAL_Handle handle){
   cursoHall                  = MAX_VALUE_HALL - MIN_VALUE_HALL;
@@ -216,7 +217,7 @@ static inline void initCalcs(HAL_Handle handle){
   resAccel                   = _IQdiv(MAX_ACCEL_VALUE,SIZE_STEPS_ACCEL);
   stepAccel                  = _IQdiv(cursoHall,resAccel);
 
-  HAL_enableTimer0Int(handle); //Habilita o TIMER0 utilizado no controle de rotaÁ„o do pressionamento duplos dos gatilhos
+  HAL_enableTimer0Int(handle); //Habilita o TIMER0 utilizado no controle de rota√ß√£o do pressionamento duplos dos gatilhos
 }
 
 static inline void HAL_readHallData(HAL_Handle handle)
@@ -235,7 +236,7 @@ static inline void HAL_readHallData(HAL_Handle handle)
         STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(16.67));
 
         #ifdef MASK_ADC_ENABLE //0.XXX000000000000
-          //M·scara para o conversor ADC para eliminar ruÌdos
+          //M√°scara para o conversor ADC para eliminar ru√≠dos
           STriggers.hallSensor1 = _IQmpy(STriggers.hallSensor1,_IQ(100));
           STriggers.hallSensor2 = _IQmpy(STriggers.hallSensor2,_IQ(100));
 
@@ -277,9 +278,15 @@ static inline void setState()
       }
       else
       {
-        gMotorVars.IdRef_A = _IQ(0);
-        gMotorVars.IqRef_A = _IQ(0);
-        gMotorVars.SpeedRef_krpm = _IQ(0.0);
+        #ifndef DISABLE_TORQUE
+          gMotorVars.IdRef_A = _IQ(0);
+          gMotorVars.IqRef_A = _IQ(0);
+        #endif
+
+        #ifndef ENABLE_MANUAL_SPEED
+          gMotorVars.SpeedRef_krpm = _IQ(0.0);
+        #endif ENABLE_MANUAL_SPEED
+
         mainState = iddle;
         #ifdef AXIS_FREE_ZERO_S
           HAL_disablePwm(halHandle);
@@ -301,8 +308,10 @@ static inline void setState()
       resSpeed                   = incSpeed-_IQfrac(incSpeed);
       incSpeed                   = _IQmpy(resSpeed,SIZE_STEPS_kRPM);
 
-      gMotorVars.IdRef_A = LIMIT_TORQUE;
-      gMotorVars.IqRef_A = LIMIT_TORQUE;
+      #ifndef DISABLE_TORQUE
+        gMotorVars.IdRef_A = LIMIT_TORQUE;
+        gMotorVars.IqRef_A = LIMIT_TORQUE;
+      #endif
 
       if(incSpeed >= MAX_kRPM_VALUE)
           incSpeed = MAX_kRPM_VALUE;
@@ -329,8 +338,10 @@ static inline void setState()
       resSpeed                   = incSpeed-_IQfrac(incSpeed);
       incSpeed                   = -(_IQmpy(resSpeed,SIZE_STEPS_kRPM));
 
-      gMotorVars.IdRef_A = LIMIT_TORQUE;
-      gMotorVars.IqRef_A = LIMIT_TORQUE;
+      #ifndef DISABLE_TORQUE
+        gMotorVars.IdRef_A = LIMIT_TORQUE;
+        gMotorVars.IqRef_A = LIMIT_TORQUE;
+      #endif
 
       if(incSpeed >= MAX_kRPM_VALUE)
           incSpeed = MAX_kRPM_VALUE;
@@ -342,14 +353,14 @@ static inline void setState()
       mainState = iddle;
     break;
     case TriggerDouble:
- //      O princÌpio de funcionamento da comutaÁ„o de velocidade È simples, utilizando o conceito de MRUV
- //      A velocidade em um MRUV È dada por V=V0+aT, logo temos que o tempo necess·rio para que um objeto
- //      alcance determinada velocidade È de T=(V-V0)/a, assim utilizando desta lÛgica sempre que dois ga
- //      tilhos s„o pressionados, calcula-se esse novo tempo o qual determina o setpoint do TIMER0.
- //      Considerando que o TIMER0 È disparado a cada 1ms, utiliza-se uma vari·vel inteira para contar,
- //      aproximadamente o n˙mero de estouros que certa velocidade deve-se manter antes de inverter o sen
- //      tido de rotaÁ„o. Para o c·lculo do tempo, considera-se sempre o tempo necess·rio  para  que o mo
- //      tor atinga a velocidade m·xima de giro configurada, assim como no exemplo abaixo:
+ //      O princ√≠pio de funcionamento da comuta√ß√£o de velocidade √© simples, utilizando o conceito de MRUV
+ //      A velocidade em um MRUV √© dada por V=V0+aT, logo temos que o tempo necess√°rio para que um objeto
+ //      alcance determinada velocidade √© de T=(V-V0)/a, assim utilizando desta l√≥gica sempre que dois ga
+ //      tilhos s√£o pressionados, calcula-se esse novo tempo o qual determina o setpoint do TIMER0.
+ //      Considerando que o TIMER0 √© disparado a cada 1ms, utiliza-se uma vari√°vel inteira para contar,
+ //      aproximadamente o n√∫mero de estouros que certa velocidade deve-se manter antes de inverter o sen
+ //      tido de rota√ß√£o. Para o c√°lculo do tempo, considera-se sempre o tempo necess√°rio  para  que o mo
+ //      tor atinga a velocidade m√°xima de giro configurada, assim como no exemplo abaixo:
  //
  //      Exemplo 1:
  //        Gatilhos:
@@ -371,7 +382,7 @@ static inline void setState()
  //                |
  //                      |------|
  //                        2x setTimerToggle = 2x MAX_kRPM_VALUE/(.65*MAX_ACCEL_VALUE) = 380ms
- //                      Logo a cada 380ms o setpoint de velocidade ser· chaveado de um extremo a outro;
+ //                      Logo a cada 380ms o setpoint de velocidade ser√° chaveado de um extremo a outro;
 
  //      Exemplo 2:
  //        Gatilhos:
@@ -393,7 +404,7 @@ static inline void setState()
  //                |
  //                      |------|
  //                        2x setTimerToggle = 2x MAX_kRPM_VALUE/(.50*MAX_ACCEL_VALUE) = 495ms
- //                      Logo a cada 495ms o setpoint de velocidade ser· chaveado de um extremo a outro;
+ //                      Logo a cada 495ms o setpoint de velocidade ser√° chaveado de um extremo a outro;
 
       STriggers.meanDoubleTrig   = _IQdiv((STriggers.SENSOR_CW+STriggers.SENSOR_CCW),_IQ(2.0));
       incAccel                   = _IQdiv(STriggers.meanDoubleTrig,stepAccel);
@@ -407,7 +418,7 @@ static inline void setState()
       gMotorVars.MaxAccel_krpmps = incAccel;
 
       auxCalcTimer               = _IQdiv(MAX_kRPM_VALUE,incAccel);
-       setTimerToggle             = _IQtoF(auxCalcTimer)*50; //Multiplica-se por 2k porque È 2x 1000ms de convers„o conforme briefing anterior
+       setTimerToggle             = _IQtoF(auxCalcTimer)*50; //Multiplica-se por 2k porque √© 2x 1000ms de convers√£o conforme briefing anterior
       mainState = iddle;
     break;
     default:
@@ -437,7 +448,7 @@ void toggleSetSpeed(){
     gMotorVars.SpeedRef_krpm = MAX_kRPM_VALUE;
 }
 /***************************************************************************
- *  Fim de funÁıes definidas por: ¬nderson I. da Silva
+ *  Fim de fun√ß√µes definidas por: √Çnderson I. da Silva
 ***************************************************************************/
 
 
@@ -597,16 +608,18 @@ void main(void)
   {
     // Waiting for enable system flag to be set
     //while(!(gMotorVars.Flag_enableSys));
+    #ifndef DISABLE_TORQUE
     gMotorVars.IdRef_A = LIMIT_TORQUE;
     gMotorVars.IqRef_A = LIMIT_TORQUE;
-	gMotorVars.Flag_enableUserParams = true;
-    gMotorVars.Flag_enableSys = true; //Consideramos que o sistema È inicializado automaticamente
-    gMotorVars.Flag_Run_Identify = true; //Motor j· identificado
+    #endif
+    gMotorVars.Flag_enableUserParams = true;
+    gMotorVars.Flag_enableSys = true; //Consideramos que o sistema √© inicializado automaticamente
+    gMotorVars.Flag_Run_Identify = true; //Motor j√° identificado
 //    gMotorVars.Flag_enableRsRecalc = true;
     // Enable the Library internal PI.  Iq is referenced by the speed PI now
     CTRL_setFlag_enableSpeedCtrl(ctrlHandle, true);
 
-    //Loop principal - Tecnicamente n„o deve sair deste laÁo
+    //Loop principal - Tecnicamente n√£o deve sair deste la√ßo
     // loop while the enable system flag is true
     while(gMotorVars.Flag_enableSys)
       {
@@ -617,10 +630,10 @@ void main(void)
         gCounter_updateGlobals++;
 
         // enable/disable the use of motor parameters being loaded from user.h
-        CTRL_setFlag_enableUserMotorParams(ctrlHandle,gMotorVars.Flag_enableUserParams); //Habilita o uso de par‚metros diretos do user.h
+        CTRL_setFlag_enableUserMotorParams(ctrlHandle,gMotorVars.Flag_enableUserParams); //Habilita o uso de par√¢metros diretos do user.h
 
         // enable/disable Rs recalibration during motor startup
-        EST_setFlag_enableRsRecalc(obj->estHandle,gMotorVars.Flag_enableRsRecalc); //Habilita o c·lculo online da resistÍncia Rs do motor - Desativado por padr„o
+        EST_setFlag_enableRsRecalc(obj->estHandle,gMotorVars.Flag_enableRsRecalc); //Habilita o c√°lculo online da resist√™ncia Rs do motor - Desativado por padr√£o
 
         // enable/disable automatic calculation of bias values
         CTRL_setFlag_enableOffset(ctrlHandle,gMotorVars.Flag_enableOffsetcalc);
@@ -790,7 +803,7 @@ void main(void)
         {
           // Leitura dos valores dos gatilhos da pistola
           HAL_readHallData(halHandle);
-          // FunÁ„o principal para operar a pistola
+          // Fun√ß√£o principal para operar a pistola
           setState();
           delayReadADC = 0;
         }
